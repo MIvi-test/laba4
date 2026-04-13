@@ -2,6 +2,7 @@
 #define DETER_H
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
@@ -16,13 +17,19 @@ enum typeValue
 typedef struct Node
 {
     struct Node *left_child;
+    struct Node *parent;
     struct Node *right_child;
-    enum typeValue type;
     char value[11];
-    char op;
-    // bool sSheet;
     bool isRoot;
+
 } Node;
+
+typedef struct pointer_stack
+{
+    Node *ptr;
+    struct pointer_stack *before; 
+} stack;
+
 
 typedef struct
 {
