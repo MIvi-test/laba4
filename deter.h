@@ -6,12 +6,21 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <ctype.h>
 // #include "auxiliary.c"
 
-enum typeValue
+enum typeToken
 {
-    OP = 0,
-    INT
+    VALUE = 0,
+    PLUS,
+    MUNIS,
+    MULTUPHLY,
+    DIVISION,
+    MODUL,
+    POWER,
+    NOK,
+    NOD,
+    FACTORIAL
 };
 
 typedef struct Node
@@ -21,7 +30,7 @@ typedef struct Node
     struct Node *right_child;
     char value[11];
     bool isRoot;
-
+    bool sSheet;
 } Node;
 
 typedef struct pointer_stack
@@ -38,4 +47,10 @@ typedef struct
     int capacity;
 } massiveToken;
 
+char *ALL_OPERATORS[] = {"+","-",\
+                        "*","/","%%",\
+                         "^",\
+                         "@",\
+                         "#",\
+                         "!"};
 #endif
