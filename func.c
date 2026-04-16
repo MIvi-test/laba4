@@ -6,7 +6,7 @@ bool push(stack **pointers, Node *ptr)
     {
         return false;
     }
-    stack *new = (stack *)malloc(sizeof(stack *));
+    stack *new = (stack *)malloc(sizeof(stack));
     if (!new)
     {
         return false;
@@ -50,7 +50,7 @@ void destroy_stack(stack **pointers)
 
 char index_of_operator(char *ch)
 {
-    for (int i = 0; i < sizeof(ALL_OPERATORS) / sizeof(ALL_OPERATORS[0]); i++)
+    for (long unsigned int i = 0; i < sizeof(ALL_OPERATORS) / sizeof(ALL_OPERATORS[0]); i++)
     {
         if (!strncmp(ch, ALL_OPERATORS[i], 1))
         {
@@ -132,7 +132,7 @@ bool priority(Node *left, Node *right)
     }
     case 8:
     {
-        if(n2 == 8)
+        if (n2 == 8)
         {
             return false;
         }
@@ -162,6 +162,41 @@ unsigned char len_value(char *start)
         return 0;
     }
     return len;
+}
+
+void reverse(char *start, char *end)
+{
+    end--;
+    while (start < end)
+    {
+        char temp = *start;
+        *start = *end;
+        *end = temp;
+        start++;
+        end--;
+    }
+}
+
+void reverse_sequence(char *str)
+{
+    if (!str)
+    {
+        return;
+    }
+    int len = strlen(str);
+
+    reverse(str, str + len);
+    int lw = 0;
+    while (*str)
+    {
+        while (isspace(*str))
+        {
+            str++;
+        }
+        lw = len_value(str);
+        reverse(str, str + lw);
+        str += lw;
+    }
 }
 
 Node *add_Node(Node **root, Node **now, Node *new)
@@ -253,15 +288,289 @@ Node *parse_expr(char *line)
     return root;
 }
 
-void load_prf_expr(char *line);
+Node *load_prf_expr(char *line)
+{
+    Node *root = NULL;
+    Node *now = NULL;
+    int count_list = 0;
+    int count_op = 0;
+    while (*line != '\0')
+    {
+        while (isspace(*line))
+        {
+            line++;
+        }
+        if (!isalnum(*line) && index_of_operator(line) == -1)
+        {
+            return NULL;
+        }
+        int len = len_value(line);
+        char value[11];
+        strncpy(value, line, len);
+        value[len] = '\0';
+        Node *new = createNode(value);
+        if (!new)
+        {
+            printf("[ERROR] ошибка выделения памяти\n");
+            return NULL;
+        }
+        if (root == NULL)
+        {
+            count_list += index_of_operator(new->value) == -1 ? 1 : 0;
+            count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+            root = new;
+            now = new;
+            new->isRoot = true;
+            line += len;
+            continue;
+        }
 
-void save_prf(Node *tree);
+        while ((now != NULL) && (now->left_child != NULL) &&
+               (now->right_child != NULL))
+        {
+            now = now->parent;
+        }
+        if (now == NULL)
+        {
+            break;
+        }
 
-void save_pst(Node *tree);
+        if (now->left_child == NULL)
+        {
+            now->left_child = new;
+        }
+        else
+        {
+            now->right_child = new;
+        }
+        now->sSheet = false;
+        new->parent = now;
+
+        count_list += index_of_operator(new->value) == -1 ? 1 : 0;
+        count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+        if (index_of_operator(new->value) != -1)
+        {
+            now = new;
+        }
+        line += len;
+    }
+    if (count_op + 1 != count_list || now == NULL)
+    {
+        destroy_tree(&root);
+        return NULL;
+    }
+    return root;
+}
+
+Node *load_pst_expr(char *line)
+{
+    Node *root = NULL;
+    Node *now = NULL;
+    int count_list = 0;
+    int count_op = 0;
+    reverse_sequence(line);
+    while (*line != '\0')
+    {
+        while (isspace(*line))
+        {
+            line++;
+        }
+        if (!isalnum(*line) && index_of_operator(line) == -1)
+        {
+            return NULL;
+        }
+        int len = len_value(line);
+        char value[11];
+        strncpy(value, line, len);
+        value[len] = '\0';
+        Node *new = createNode(value);
+        if (!new)
+        {
+            printf("[ERROR] ошибка выделения памяти\n");
+            destroy_tree(&root);
+            return NULL;
+        }
+        if (root == NULL)
+        {
+            root = new;
+            new->isRoot = true;
+            now = new;
+            line += len;
+            count_list += index_of_operator(new->value) == -1 ? 1 : 0;
+            count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+            continue;
+        }
+
+        if (!now)
+        {
+            break;
+        }
+        if (now->right_child == NULL)
+        {
+            now->right_child = new;
+        }
+        else if (now->left_child == NULL)
+        {
+            now->left_child = new;
+        }
+        else
+        {
+            now = now->parent;
+            now->left_child = new;
+        }
+        new->parent = now;
+        now->sSheet = false;
+        count_list += index_of_operator(new->value) == -1 ? 1 : 0;
+        count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+        if (index_of_operator(new->value) != -1)
+        {
+            now = new;
+        }
+        line += len;
+    }
+
+    if (count_op + 1 != count_list || now == NULL)
+    {
+        destroy_tree(&root);
+        return NULL;
+    }
+    return root;
+}
+
+massiveToken save_prf(Node *root)
+{
+    Node *now = root;
+    stack *NODES = NULL;
+    massiveToken result;
+    result.len = 0;
+    result.capacity = 64;
+    result.data = NULL;
+    if (!root)
+    {
+        return result;
+    }
+    result.data = (char *)malloc(result.capacity);
+    // printf("%s ", root->value);
+    // save_prf(root->left_child);
+    // save_prf(root->right_child);
+    while (now != NULL || NODES != NULL)
+    {
+        if (now == NULL)
+        {
+            Node *old = pop(&NODES);
+            if (!old)
+            {
+                continue;
+            }
+            now = old->right_child;
+        }
+        else
+        {
+            // printf("%s ", now->value);
+            if (result.len + 1 == result.capacity)
+            {
+                result.capacity *= 2;
+                result.data = (char *)realloc(result.data, result.capacity);
+            }
+            strncpy(result.data + result.len, now->value, strlen(now->value));
+            result.len += strlen(now->value) + 1;
+            result.data[result.len - 1] = ' ';
+
+            if (now->sSheet == false)
+            {
+                push(&NODES, now);
+            }
+            now = now->left_child;
+        }
+    }
+    result.len--;
+    result.data[result.len] = '\0';
+    destroy_stack(&NODES);
+    return result;
+}
+
+massiveToken save_pst(Node *root)
+{
+    Node *now = root;
+    stack *NODES = NULL;
+    massiveToken result;
+    result.len = 0;
+    result.capacity = 64;
+    result.data = NULL;
+    if (!root)
+    {
+        return result;
+    }
+    result.data = (char *)malloc(result.capacity);
+    while (now != NULL || NODES != NULL)
+    {
+        if (now != NULL)
+        {
+            if (result.len + 1 == result.capacity)
+            {
+                result.capacity *= 2;
+                result.data = (char *)realloc(result.data, result.capacity);
+            }
+            strncpy(result.data + result.len, now->value, strlen(now->value));
+            result.len += strlen(now->value) + 1;
+            result.data[result.len - 1] = ' ';
+            push(&NODES, now);
+            now = now->right_child;
+        }
+        else
+        {
+            Node *old = pop(&NODES);
+            now = old->left_child;
+        }
+    }
+
+    result.len--;
+    result.data[result.len] = '\0';
+    destroy_stack(&NODES);
+    return result;
+}
 
 void eval(Node *tree, int args);
 
-void destroy_tree(massiveToken *tree)
+void destroy_tree(Node **root)
 {
-    ;
+    Node *now = *root;
+    while (now != NULL)
+    {
+        if (now->left_child == NULL && now->right_child == NULL)
+        {
+            Node *temp = now->parent;
+            if (temp != NULL)
+            {
+                if (temp->left_child == now)
+                {
+                    temp->left_child = NULL;
+                }
+                else
+                {
+                    temp->right_child = NULL;
+                }
+            }
+            free(now);
+            now = temp;
+        }
+        else
+        {
+            if (now->left_child != NULL)
+            {
+                now = now->left_child;
+            }
+            else if (now->right_child != NULL)
+            {
+                now = now->right_child;
+            }
+            else
+            {
+                printf("[ERROR] no list, but haven't child\n");
+                free(now);
+                return;
+            }
+        }
+    }
+    // *root = NULL;
 }

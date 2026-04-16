@@ -39,7 +39,6 @@ typedef struct pointer_stack
     struct pointer_stack *before; 
 } stack;
 
-
 typedef struct
 {
     char *data;

@@ -2,6 +2,11 @@
 #define FUNC_H
 #include "deter.h"
 
+
+void reverse(char *start, char *end);
+
+void reverse_sequence(char *str);
+
 char index_of_operator(char *ch);
 
 Node *createNode(char *value);
@@ -20,15 +25,17 @@ unsigned char len_value(char *start);
 
 Node *parse_expr(char *line);
 
-void load_prf_expr(char *line);
+Node *load_prf_expr(char *line);
 
-void save_prf(Node *tree);
+Node *load_pst_expr(char *line);
 
-void save_pst(Node *tree);
+massiveToken save_prf(Node *root);
 
-void eval(Node *tree, int args);
+massiveToken save_pst(Node *root);
 
-void destroy_tree(massiveToken *tree);
+void eval(Node *root, int args);
+
+void destroy_tree(Node **root);
 
 Node *add_node(Node **root, Node **now, Node *new);
 
