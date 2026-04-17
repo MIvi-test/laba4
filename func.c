@@ -24,7 +24,9 @@ Node *pop(stack **pointers)
         return NULL;
     }
     Node *ptr = (*pointers)->ptr;
-    (*pointers) = (*pointers)->before;
+    stack *old = *pointers;
+    *pointers = (*pointers)->before;
+    free(old);
     return ptr;
 }
 
@@ -312,6 +314,7 @@ Node *load_prf_expr(char *line)
         if (!new)
         {
             printf("[ERROR] ошибка выделения памяти\n");
+            destroy_tree(&root);
             return NULL;
         }
         if (root == NULL)
@@ -332,6 +335,7 @@ Node *load_prf_expr(char *line)
         }
         if (now == NULL)
         {
+            free(new);
             break;
         }
 
@@ -450,9 +454,6 @@ massiveToken save_prf(Node *root)
         return result;
     }
     result.data = (char *)malloc(result.capacity);
-    // printf("%s ", root->value);
-    // save_prf(root->left_child);
-    // save_prf(root->right_child);
     while (now != NULL || NODES != NULL)
     {
         if (now == NULL)

@@ -1,5 +1,19 @@
 #include "func.h"
 
+
+bool test_memory_leaks()
+{
+    Node *ptr1 = createNode("-");
+    stack *pointers = NULL;
+    push(&pointers, ptr1);
+    push(&pointers, ptr1);
+    push(&pointers, ptr1);
+    Node *ptr2 = pop(&pointers);
+    destroy_stack(&pointers);
+    destroy_tree(&ptr1);
+    return true;
+}
+
 bool test_reverse()
 {
     // char s1[13]; strcpy(s1, "I love bread");
@@ -122,56 +136,80 @@ bool test_Node()
     Node *test_ptr1 = createNode("*");
     if (!test_ptr1 || (strcmp("*", test_ptr1->value)))
     {
+        if (test_ptr1)
+        {
+            destroy_tree(&test_ptr1);
+        }
         return false;
     }
     else
     {
-        free(test_ptr1);
+        destroy_tree(&test_ptr1);
     }
     Node *test_ptr2 = createNode("+");
     if (!test_ptr2 || (strcmp("+", test_ptr2->value)))
     {
+        if (test_ptr2)
+        {
+            destroy_tree(&test_ptr2);
+        }
         return false;
     }
     else
     {
-        free(test_ptr2);
+        destroy_tree(&test_ptr2);
     }
     Node *test_ptr3 = createNode("123");
     if (!test_ptr3 || (strcmp("123", test_ptr3->value)))
     {
+        if (test_ptr3)
+        {
+            destroy_tree(&test_ptr3);
+        }
         return false;
     }
     else
     {
-        free(test_ptr3);
+        destroy_tree(&test_ptr3);
     }
     Node *test_ptr4 = createNode("fmdskalf fadsfadf");
     if (!test_ptr4 || !(strcmp("fmdskalf fadsfadf", test_ptr4->value)))
     {
+        if (test_ptr4)
+        {
+            destroy_tree(&test_ptr4);
+        }
         return false;
     }
     else
     {
-        free(test_ptr4);
+        destroy_tree(&test_ptr4);
     }
     Node *test_ptr5 = createNode("adasdad");
     if (!test_ptr5 || (strcmp("adasdad", test_ptr5->value)))
     {
+        if (test_ptr5)
+        {
+            destroy_tree(&test_ptr5);
+        }
         return false;
     }
     else
     {
-        free(test_ptr5);
+        destroy_tree(&test_ptr5);
     }
     Node *test_ptr6 = createNode("a");
     if (!test_ptr6 || (strcmp("a", test_ptr6->value)))
     {
+        if (test_ptr6)
+        {
+            destroy_tree(&test_ptr6);
+        }
         return false;
     }
     else
     {
-        free(test_ptr6);
+        destroy_tree(&test_ptr6);
     }
 
     return true;
@@ -216,6 +254,13 @@ bool test_stack()
     {
         return false;
     }
+
+    destroy_stack(&ptrs);
+    destroy_tree(&ptr1);
+    destroy_tree(&ptr2);
+    destroy_tree(&ptr3);
+    destroy_tree(&ptr4);
+    destroy_tree(&ptr5);
     return true;
 }
 
@@ -273,6 +318,19 @@ bool test_priory()
         printf("[LOG] @ and /\n");
         return false;
     }
+
+    destroy_tree(&n1);
+    destroy_tree(&n2);
+    destroy_tree(&n3);
+    destroy_tree(&n4);
+    destroy_tree(&n5);
+    destroy_tree(&n6);
+    destroy_tree(&n7);
+    destroy_tree(&n8);
+    destroy_tree(&n9);
+    destroy_tree(&n10);
+    destroy_tree(&n11);
+    // destroy_tree(&n1);
     return true;
 }
 
@@ -400,41 +458,62 @@ bool test_load_prf_expr()
         strcmp(r1->right_child->value, "3") ||
         r1->left_child->sSheet != true || r1->right_child->sSheet != true)
     {
+        if(r1)
+        {
+            destroy_tree(&r1);
+        }
         printf("[LOG] no solutioned 2 + 3\n");
         return false;
     }
-    free(r1);
+    else
+    {
+        destroy_tree(&r1);
+    }
     Node *res1 = load_prf_expr("/ * 5 - 14 * 4 2 2");
     if (!res1 || strcmp(res1->value, "/"))
     {
+        if(res1)
+        {
+            destroy_tree(&res1);
+        }
         printf("[LOG] no complite test from manual\n");
         return false;
     }
-    free(res1);
+    else
+    {
+        destroy_tree(&res1);
+    }
 
     Node *r2 = load_prf_expr("(+ 3 3)");
     if (r2)
     {
+        destroy_tree(&r2);
         printf("[LOG] no warning on wrong line\n");
         return false;
     }
     Node *r3 = load_prf_expr("+ + +");
     if (r3)
     {
+        destroy_tree(&r3);
         printf("[LOG] no NULL on wrong line\n");
         return false;
     }
-
+    
     Node *r4 = load_prf_expr("+ * / 4 2 3 * 5 6");
     if (!r4)
     {
         printf("[LOG] no create r4\n");
         return false;
     }
-    free(r4);
+    else
+    {
+        destroy_tree(&r4);
+    }
+    
     Node *r5 = load_prf_expr("+ * / 4 2 3 5 6");
     if (r5)
     {
+        destroy_tree(&r5);
         printf("[LOG] no NULL on wrong line\n");
         return false;
     }
@@ -442,7 +521,7 @@ bool test_load_prf_expr()
     Node *r6 = load_prf_expr("            ");
     if (r6)
     {
-        free(r6);
+        destroy_tree(&r6);
         printf("[LOG] no warning on wrong request\n");
         return false;
     }
@@ -451,9 +530,6 @@ bool test_load_prf_expr()
 
 bool test_load_rst_expr()
 {
-    char l1[] = "5 14 4 2 * - * 2 /";
-    Node *r1 = load_pst_expr(l1);
-
     char l0[] = "3 2 +";
     Node *r0 = load_pst_expr(l0);
     if (!r0 || r0->isRoot != true ||
@@ -462,27 +538,55 @@ bool test_load_rst_expr()
         strcmp(r0->right_child->value, "2"))
     {
         printf("[LOG] no create basic case\n");
+        if (r0)
+        {
+            destroy_tree(&r0);
+        }
         return false;
     }
-    destroy_tree(&r0);
+    else
+    {
+        destroy_tree(&r0);
+    }
+
+    char l1[] = "5 14 4 2 * - * 2 /";
+    Node *r1 = load_pst_expr(l1);
+
     if (!r1)
     {
         printf("[LOG] no solution manual\n");
         return false;
     }
-    destroy_tree(&r1);
-    Node *r2 = load_prf_expr("            ");
+    else
+    {
+        destroy_tree(&r1);
+    }
+    char t2[] = "            ";
+    Node *r2 = load_prf_expr(t2);
     if (r2)
     {
         destroy_tree(&r2);
         printf("[LOG] no warning on wrong request\n");
         return false;
     }
+    char t3[] = "j! 2";
+    Node *r3 = load_pst_expr(t3);
+    if (!r3)
+    {
+        printf("[LOG] error mb\n");
+    }
+    else
+    {
+        destroy_tree(&r3);
+    }
+
     return true;
 }
 
 bool test_parse_expr()
 {
+    char t1[] = "2 + 3 / 3 @ 3! - a * 5";
+
     return true;
 }
 
@@ -498,9 +602,21 @@ bool test_save_prf()
         {
             free(r1.data);
         }
+        if (test1)
+        {
+            destroy_tree(&test1);
+        }
         return false;
     }
-    free(r1.data);
+    else
+    {
+        if (r1.data)
+        {
+            free(r1.data);
+        }
+        destroy_tree(&test1);
+    }
+
     char t2[] = "/ * 5 - 14 * 4 2 2";
     Node *test2 = load_prf_expr(t2);
     massiveToken r2 = save_prf(test2);
@@ -511,11 +627,24 @@ bool test_save_prf()
         {
             free(r2.data);
         }
+        if (test2)
+        {
+            destroy_tree(&test2);
+        }
         return false;
     }
+    else
+    {
+        if (r2.data)
+        {
+            free(r2.data);
+        }
+        if (test2)
 
-    destroy_tree(&test1);
-    destroy_tree(&test2);
+        {
+            destroy_tree(&test2);
+        }
+    }
     return true;
 }
 
@@ -524,29 +653,57 @@ bool test_save_pst()
     char t1[] = "3 2 +";
     Node *test1 = load_pst_expr(t1);
     massiveToken res1 = save_pst(test1);
-    if (!test1 || strcmp(t1, res1.data))
+    if (!test1 || !res1.data || strcmp(t1, res1.data))
     {
         printf("[LOG] basic case wrong\n");
+        if (test1)
+        {
+            destroy_tree(&test1);
+        }
+        if (res1.data)
+        {
+            free(res1.data);
+        }
         return false;
     }
-    free(res1.data);
-    destroy_tree(&test1);
+    else
+    {
+        free(res1.data);
+        destroy_tree(&test1);
+    }
 
     char t2[] = "5 14 4 2 * - * 2 /";
     Node *test2 = load_pst_expr(t2);
     massiveToken res2 = save_pst(test2);
-    if(!test2 || strcmp(res2.data, t2))
+    if (!test2 || !res2.data || strcmp(res2.data, t2))
     {
         printf("[LOG] no complit manual\n");
+        if (test2)
+        {
+            destroy_tree(&test2);
+        }
         return false;
-    }  
-    destroy_tree(&test2);
-    free(res2.data);
+    }
+    else
+    {
+        destroy_tree(&test2);
+        free(res2.data);
+    }
     return true;
 }
 
 int main()
 {
+
+    if(!test_memory_leaks())
+    {
+        printf("[-] memory leaks");
+        exit(1);
+    }
+    else
+    {
+        printf("[-] memory leaks");
+    }
     if (!test_reverse())
     {
         printf("[-] test_reverse\n");
