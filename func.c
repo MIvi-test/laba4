@@ -341,7 +341,7 @@ Node *parse_expr(char *line)
         }
         char value[11];
         memcpy(value, line, len);
-        value[10] = '\0';
+        value[len] = '\0';
 
         Node *new_node = createNode(value);
         if (!new_node)

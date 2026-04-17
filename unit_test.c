@@ -722,7 +722,7 @@ bool test_parse_expr()
         free(res4.data);
     }
 
-    char t5[] = "((a + b) / c+2)*43";
+    char t5[] = "((a + b) / c+2)*43!";
     Node *tree5 = parse_expr(t5);
     if(!tree5)
     {
@@ -731,14 +731,14 @@ bool test_parse_expr()
     }
     else
     {
-        massiveToken res5 = save_pst(tree5);
+        massiveToken res5 = save_prf(tree5);
         destroy_tree(&tree5);
         if(!res5.data)
         {
             printf("[LOG] cant to make res5\n");
             return false;
         }
-        if(strcmp(res5.data, "a b + c / 2 + 43 *"))
+        if(strcmp(res5.data, "* + / + a b c 2 ! 43"))
         {
             free(res5.data);
             printf("[LOG] does not mutch with reference tree5\n");
