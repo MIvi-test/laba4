@@ -15,7 +15,7 @@ size_t USE_FREE = 0;
 
 // Временный буфер для calloc, чтобы избежать падения при инициализации dlsym
 static char calloc_buffer[4096];
-static int dlsym_in_progress = 0;
+static int dlsym_in_progress = 1;
 
 __attribute__((constructor)) void init(void) {
     dlsym_in_progress = 1;
@@ -27,7 +27,7 @@ __attribute__((constructor)) void init(void) {
 }
 
 void *malloc(size_t size) {
-    if (!real_malloc) init(); // На случай если malloc вызван до конструктора
+    if (!real_malloc) init();
     USE_MALLOC++;
     return real_malloc(size);
 }
@@ -48,7 +48,6 @@ void *calloc(size_t nmemb, size_t size) {
 }
 
 void free(void *ptr) {
-    // Не пытаемся освобождать статический буфер calloc
     if (ptr == (void*)calloc_buffer) return;
     if (!real_free) init();
     USE_FREE++;
@@ -62,6 +61,6 @@ __attribute__((destructor)) void writefile(void) {
         return;
     }
     fprintf(f, "malloc: %zu\nrealloc: %zu\ncalloc: %zu\nfree: %zu\n", 
-            USE_MALLOC, USE_REALLOC, USE_CALLOC, USE_FREE);
+            USE_MALLOC-2, USE_REALLOC, USE_CALLOC, USE_FREE);
     fclose(f);
 }

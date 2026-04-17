@@ -267,12 +267,16 @@ Node *parse_expr(char *line)
             root = NULL;
             now = NULL;
             // выделяем поддерево
+            continue;
         }
         if (*line == ')')
         {
+            line++;
             if (!pointers)
             {
-                // обработка ошибки, так как нет открывающей скобки
+                destroy_tree(&root);
+                destroy_stack(&pointers);
+                return NULL;
                 exit(1);
             }
             // совмещаем два поддерева
@@ -280,29 +284,71 @@ Node *parse_expr(char *line)
             if (!now)
             {
                 pop(&pointers); // убираем бессмысленный root=NULL
-                // обработать приоритетность
+                while(isspace(*line))
+                {
+                    line++;
+                }
+                if(*line == '\0')
+                {
+                    now = root;
+                    break;
+                }
+                int l = len_value(line);
+                char extra_value[11];
+                memcpy(extra_value, line, l);
+                if(index_of_operator(extra_value) == -1)
+                {
+                    destroy_tree(&root);
+                    destroy_stack(&pointers);
+                    return NULL;
+                }
+                Node *extra_Node = createNode(extra_value);
+                if(!extra_Node)
+                {
+                    destroy_tree(&root);
+                    destroy_stack(&pointers);
+                    return NULL;
+                } 
+
+                extra_Node->isRoot = true;
+                extra_Node->sSheet = false;
+                extra_Node->left_child = root;
+                root->isRoot = false;
+                root = extra_Node;
+                now = root;
+                line+= l;
+                continue;
+
             }
             else
             {
                 now->right_child = root;
+                root->isRoot = false;
                 root = pop(&pointers);
             }
+            
+        }
+        while (isspace(*line))
+        {
+            line++;
         }
         int len = len_value(line);
         if (len == 0)
         {
-            // обработка ошибки
-            exit(1);
+            destroy_stack(&pointers);
+            destroy_tree(&root);
+            return NULL;
         }
         char value[11];
-        strncpy(value, line, len);
+        memcpy(value, line, len);
         value[10] = '\0';
 
         Node *new_node = createNode(value);
         if (!new_node)
         {
-            // обработка ошибки
-            exit(1);
+            destroy_tree(&root);
+            destroy_stack(&pointers);
+            return NULL;
         }
         add_Node(&root, &now, new_node);
         line += len;
