@@ -72,7 +72,7 @@ Node *createNode(char *value)
     new->isRoot = false;
     new->left_child = NULL;
     new->right_child = NULL;
-    strncpy(new->value, value, sizeof(new->value));
+    memcpy(new->value, value, sizeof(new->value));
     new->parent = NULL;
     new->sSheet = true;
     return new;
@@ -259,15 +259,36 @@ Node *parse_expr(char *line)
         {
             line++;
         }
-        bool pr = 0; // priority
         if (*line == '(')
         {
-            pr = 1;
             line++;
-            push(&pointers, now); // save start position
+            push(&pointers, root);
+            push(&pointers, now);
+            root = NULL;
+            now = NULL;
+            // выделяем поддерево
+        }
+        if (*line == ')')
+        {
+            if (!pointers)
+            {
+                // обработка ошибки, так как нет открывающей скобки
+                exit(1);
+            }
+            // совмещаем два поддерева
+            now = pop(&pointers);
+            if (!now)
+            {
+                pop(&pointers); // убираем бессмысленный root=NULL
+                // обработать приоритетность
+            }
+            else
+            {
+                now->right_child = root;
+                root = pop(&pointers);
+            }
         }
         int len = len_value(line);
-
         if (len == 0)
         {
             // обработка ошибки
@@ -284,7 +305,6 @@ Node *parse_expr(char *line)
             exit(1);
         }
         add_Node(&root, &now, new_node);
-
         line += len;
     }
     return root;
@@ -352,6 +372,10 @@ Node *load_prf_expr(char *line)
 
         count_list += index_of_operator(new->value) == -1 ? 1 : 0;
         count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+        if (!strncmp("!", new->value, 1))
+        {
+            count_list += 1;
+        }
         if (index_of_operator(new->value) != -1)
         {
             now = new;
@@ -366,12 +390,16 @@ Node *load_prf_expr(char *line)
     return root;
 }
 
-Node *load_pst_expr(char *line)
+Node *load_pst_expr(char *source)
 {
     Node *root = NULL;
     Node *now = NULL;
     int count_list = 0;
     int count_op = 0;
+    
+    char *line = (char*)malloc(strlen(source)+1);
+    char *start = line;
+    memcpy(line, source, strlen(source)+1);
     reverse_sequence(line);
     while (*line != '\0')
     {
@@ -402,6 +430,10 @@ Node *load_pst_expr(char *line)
             line += len;
             count_list += index_of_operator(new->value) == -1 ? 1 : 0;
             count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+            if (!strncmp("!", new->value, 1))
+            {
+                count_list += 1;
+            }
             continue;
         }
 
@@ -426,6 +458,10 @@ Node *load_pst_expr(char *line)
         now->sSheet = false;
         count_list += index_of_operator(new->value) == -1 ? 1 : 0;
         count_op += index_of_operator(new->value) != -1 ? 1 : 0;
+        if (!strncmp("!", new->value, 1))
+        {
+            count_list += 1;
+        }
         if (index_of_operator(new->value) != -1)
         {
             now = new;
@@ -438,6 +474,7 @@ Node *load_pst_expr(char *line)
         destroy_tree(&root);
         return NULL;
     }
+    free(start);
     return root;
 }
 
@@ -473,7 +510,7 @@ massiveToken save_prf(Node *root)
                 result.capacity *= 2;
                 result.data = (char *)realloc(result.data, result.capacity);
             }
-            strncpy(result.data + result.len, now->value, strlen(now->value));
+            memcpy(result.data + result.len, now->value, strlen(now->value));
             result.len += strlen(now->value) + 1;
             result.data[result.len - 1] = ' ';
 
@@ -512,7 +549,7 @@ massiveToken save_pst(Node *root)
                 result.capacity *= 2;
                 result.data = (char *)realloc(result.data, result.capacity);
             }
-            strncpy(result.data + result.len, now->value, strlen(now->value));
+            memcpy(result.data + result.len, now->value, strlen(now->value));
             result.len += strlen(now->value) + 1;
             result.data[result.len - 1] = ' ';
             push(&NODES, now);
@@ -528,6 +565,7 @@ massiveToken save_pst(Node *root)
     result.len--;
     result.data[result.len] = '\0';
     destroy_stack(&NODES);
+    reverse_sequence(result.data);
     return result;
 }
 

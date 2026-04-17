@@ -1,6 +1,5 @@
 #include "func.h"
 
-
 bool test_memory_leaks()
 {
     Node *ptr1 = createNode("-");
@@ -8,7 +7,6 @@ bool test_memory_leaks()
     push(&pointers, ptr1);
     push(&pointers, ptr1);
     push(&pointers, ptr1);
-    Node *ptr2 = pop(&pointers);
     destroy_stack(&pointers);
     destroy_tree(&ptr1);
     return true;
@@ -443,6 +441,18 @@ bool test_add_node()
         return false;
     }
 
+    massiveToken res1 = save_prf(root);
+    if(!res1.data || strcmp(res1.data, "+ 3 / 4 2"))
+    {
+        printf("[LOG] i cant understand what that sheet\n");
+        if(res1.data)
+        {
+            free(res1.data);
+            destroy_tree(&root);
+        }
+        return false;
+    }
+    free(res1.data);
     destroy_tree(&root);
     return true;
 }
@@ -458,7 +468,7 @@ bool test_load_prf_expr()
         strcmp(r1->right_child->value, "3") ||
         r1->left_child->sSheet != true || r1->right_child->sSheet != true)
     {
-        if(r1)
+        if (r1)
         {
             destroy_tree(&r1);
         }
@@ -472,7 +482,7 @@ bool test_load_prf_expr()
     Node *res1 = load_prf_expr("/ * 5 - 14 * 4 2 2");
     if (!res1 || strcmp(res1->value, "/"))
     {
-        if(res1)
+        if (res1)
         {
             destroy_tree(&res1);
         }
@@ -498,7 +508,7 @@ bool test_load_prf_expr()
         printf("[LOG] no NULL on wrong line\n");
         return false;
     }
-    
+
     Node *r4 = load_prf_expr("+ * / 4 2 3 * 5 6");
     if (!r4)
     {
@@ -509,7 +519,7 @@ bool test_load_prf_expr()
     {
         destroy_tree(&r4);
     }
-    
+
     Node *r5 = load_prf_expr("+ * / 4 2 3 5 6");
     if (r5)
     {
@@ -525,6 +535,28 @@ bool test_load_prf_expr()
         printf("[LOG] no warning on wrong request\n");
         return false;
     }
+
+
+    Node *r7 = load_prf_expr("- + 2 / 3 @ 3 ! 3 * a 5");
+    if(!r7)
+    {
+        printf("[LOG] no create correct tree\n");
+        return false;
+    }
+    massiveToken res7 = save_prf(r7);
+    destroy_tree(&r7);
+    if(!res7.data)
+    {
+        printf("[LOG] no write correct prf tree\n");
+        return false;
+    }
+    if(strcmp(res7.data,"- + 2 / 3 @ 3 ! 3 * a 5"))
+    {
+        printf("[LOG] no reverse function\n");
+        free(res7.data);
+        return false;
+    }
+    free(res7.data);
     return true;
 }
 
@@ -569,7 +601,7 @@ bool test_load_rst_expr()
         printf("[LOG] no warning on wrong request\n");
         return false;
     }
-    char t3[] = "j! 2";
+    char t3[] = "! 2";
     Node *r3 = load_pst_expr(t3);
     if (!r3)
     {
@@ -586,7 +618,34 @@ bool test_load_rst_expr()
 bool test_parse_expr()
 {
     char t1[] = "2 + 3 / 3 @ 3! - a * 5";
-
+    Node *tree1 = parse_expr(t1);
+    if (!tree1)
+    {
+        return false;
+    }
+    else
+    {
+        massiveToken res1;
+        res1 = save_prf(tree1);
+        if (strcmp(res1.data, "- + 2 / 3 @ 3 ! 3 * a 5"))
+        {
+            free(res1.data);
+            destroy_tree(&tree1);
+            printf("[LOG] error prf form\n");
+            return false;
+        }
+        free(res1.data);
+        res1.len = 0;
+        res1.capacity = 0;
+        res1 = save_pst(tree1);
+        destroy_tree(&tree1);
+        if(strcmp(res1.data,"2 3 3 3 ! @ / + a 5 * -"))
+        {
+            printf("[LOG] error pst form\n");
+            free(res1.data);
+            return false;
+        }
+    }
     return true;
 }
 
@@ -650,7 +709,7 @@ bool test_save_prf()
 
 bool test_save_pst()
 {
-    char t1[] = "3 2 +";
+    char t1[] = "10 5 + 2 *";
     Node *test1 = load_pst_expr(t1);
     massiveToken res1 = save_pst(test1);
     if (!test1 || !res1.data || strcmp(t1, res1.data))
@@ -672,7 +731,7 @@ bool test_save_pst()
         destroy_tree(&test1);
     }
 
-    char t2[] = "5 14 4 2 * - * 2 /";
+    char t2[] = "a 2 ^ b 2 ^ +";
     Node *test2 = load_pst_expr(t2);
     massiveToken res2 = save_pst(test2);
     if (!test2 || !res2.data || strcmp(res2.data, t2))
@@ -695,14 +754,14 @@ bool test_save_pst()
 int main()
 {
 
-    if(!test_memory_leaks())
+    if (!test_memory_leaks())
     {
         printf("[-] memory leaks");
         exit(1);
     }
     else
     {
-        printf("[-] memory leaks");
+        printf("[+] memory leaks");
     }
     if (!test_reverse())
     {
@@ -808,5 +867,14 @@ int main()
     else
     {
         printf("[+] save_pst\n");
+    }
+    if (!test_parse_expr())
+    {
+        printf("[-] parse_espr\n");
+        exit(1);
+    }
+    else
+    {
+        printf("[+] parse_espr\n");
     }
 }
