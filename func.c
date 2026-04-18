@@ -644,6 +644,11 @@ massiveToken save_pst(Node *root)
     return result;
 }
 
+static bool eval_fits_int_range(long long x)
+{
+    return x >= INT_MIN && x <= INT_MAX;
+}
+
 static unsigned long long eval_uabs(long long x)
 {
     if (x >= 0)
@@ -673,7 +678,7 @@ static bool eval_parse_literal(const char *s, long long *out)
     errno = 0;
     char *end = NULL;
     long long v = strtoll(s, &end, 10);
-    if (errno == ERANGE || end == s || *end != '\0')
+    if (errno == ERANGE || end == s || *end != '\0' || !eval_fits_int_range(v))
     {
         return false;
     }
@@ -822,21 +827,21 @@ static bool eval_recursive(Node *node, VARS *vars, long long *out)
         {
             return false;
         }
-        return !__builtin_add_overflow(l, r, out);
+        return !__builtin_add_overflow(l, r, out) && eval_fits_int_range(*out);
     case 1: // -
         if (!eval_recursive(node->left_child, vars, &l) ||
             !eval_recursive(node->right_child, vars, &r))
         {
             return false;
         }
-        return !__builtin_sub_overflow(l, r, out);
+        return !__builtin_sub_overflow(l, r, out) && eval_fits_int_range(*out);
     case 2: // *
         if (!eval_recursive(node->left_child, vars, &l) ||
             !eval_recursive(node->right_child, vars, &r))
         {
             return false;
         }
-        return !__builtin_mul_overflow(l, r, out);
+        return !__builtin_mul_overflow(l, r, out) && eval_fits_int_range(*out);
     case 3: // /
         if (!eval_recursive(node->right_child, vars, &r))
         {
@@ -856,7 +861,7 @@ static bool eval_recursive(Node *node, VARS *vars, long long *out)
             return false;
         }
         *out = l / r;
-        return true;
+        return eval_fits_int_range(*out);
     case 4: // %
         if (!eval_recursive(node->right_child, vars, &r))
         {
@@ -876,34 +881,34 @@ static bool eval_recursive(Node *node, VARS *vars, long long *out)
             return false;
         }
         *out = l % r;
-        return true;
+        return eval_fits_int_range(*out);
     case 5: // ^
         if (!eval_recursive(node->left_child, vars, &l) ||
             !eval_recursive(node->right_child, vars, &r))
         {
             return false;
         }
-        return eval_pow(l, r, out);
+        return eval_pow(l, r, out) && eval_fits_int_range(*out);
     case 6: // @ gcd
         if (!eval_recursive(node->left_child, vars, &l) ||
             !eval_recursive(node->right_child, vars, &r))
         {
             return false;
         }
-        return eval_gcd(l, r, out);
+        return eval_gcd(l, r, out) && eval_fits_int_range(*out);
     case 7: // # lcm
         if (!eval_recursive(node->left_child, vars, &l) ||
             !eval_recursive(node->right_child, vars, &r))
         {
             return false;
         }
-        return eval_lcm(l, r, out);
+        return eval_lcm(l, r, out) && eval_fits_int_range(*out);
     case 8: // !
         if (!eval_unary_child(node, vars, &l))
         {
             return false;
         }
-        return eval_factorial(l, out);
+        return eval_factorial(l, out) && eval_fits_int_range(*out);
     default:
         return false;
     }

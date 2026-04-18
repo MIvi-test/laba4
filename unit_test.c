@@ -923,6 +923,422 @@ bool test_save_pst()
     return true;
 }
 
+bool test_eval()
+{
+    long long result = 0;
+    VARS var_b = {.next = NULL, .value = 3, .name = "b"};
+    VARS var_a = {.next = &var_b, .value = 7, .name = "a"};
+
+    if (eval(NULL, &var_a, &result))
+    {
+        printf("[LOG] eval(NULL) must be false\n");
+        return false;
+    }
+
+    Node *tmp = load_prf_expr("+ 1 2");
+    if (!tmp)
+    {
+        printf("[LOG] tmp tree not created\n");
+        return false;
+    }
+    if (eval(tmp, &var_a, NULL))
+    {
+        printf("[LOG] eval with NULL result must be false\n");
+        destroy_tree(&tmp);
+        return false;
+    }
+    destroy_tree(&tmp);
+
+    Node *n1 = load_prf_expr("42");
+    if (!n1 || !eval(n1, &var_a, &result) || result != 42)
+    {
+        printf("[LOG] literal eval failed\n");
+        if (n1)
+        {
+            destroy_tree(&n1);
+        }
+        return false;
+    }
+    destroy_tree(&n1);
+
+    Node *n2 = load_prf_expr("a");
+    if (!n2 || !eval(n2, &var_a, &result) || result != 7)
+    {
+        printf("[LOG] variable eval failed\n");
+        if (n2)
+        {
+            destroy_tree(&n2);
+        }
+        return false;
+    }
+    destroy_tree(&n2);
+
+    Node *n3 = load_prf_expr("unknown");
+    if (!n3 || eval(n3, &var_a, &result))
+    {
+        printf("[LOG] unknown variable must fail\n");
+        if (n3)
+        {
+            destroy_tree(&n3);
+        }
+        return false;
+    }
+    destroy_tree(&n3);
+
+    Node *n4 = load_prf_expr("+ 5 6");
+    if (!n4 || !eval(n4, NULL, &result) || result != 11)
+    {
+        printf("[LOG] add eval failed\n");
+        if (n4)
+        {
+            destroy_tree(&n4);
+        }
+        return false;
+    }
+    destroy_tree(&n4);
+
+    Node *n5 = load_prf_expr("- 5 6");
+    if (!n5 || !eval(n5, NULL, &result) || result != -1)
+    {
+        printf("[LOG] sub eval failed\n");
+        if (n5)
+        {
+            destroy_tree(&n5);
+        }
+        return false;
+    }
+    destroy_tree(&n5);
+
+    Node *n6 = load_prf_expr("* 3 6");
+    if (!n6 || !eval(n6, NULL, &result) || result != 18)
+    {
+        printf("[LOG] mul eval failed\n");
+        if (n6)
+        {
+            destroy_tree(&n6);
+        }
+        return false;
+    }
+    destroy_tree(&n6);
+
+    Node *n7 = load_prf_expr("/ 7 2");
+    if (!n7 || !eval(n7, NULL, &result) || result != 3)
+    {
+        printf("[LOG] div eval failed\n");
+        if (n7)
+        {
+            destroy_tree(&n7);
+        }
+        return false;
+    }
+    destroy_tree(&n7);
+
+    Node *n8 = load_prf_expr("/ 7 0");
+    if (!n8 || !eval(n8, NULL, &result) || result != 0)
+    {
+        printf("[LOG] div by zero branch failed\n");
+        if (n8)
+        {
+            destroy_tree(&n8);
+        }
+        return false;
+    }
+    destroy_tree(&n8);
+
+    Node *n9 = createNode("%%");
+    Node *n9l = createNode("7");
+    Node *n9r = createNode("4");
+    if (!n9 || !n9l || !n9r)
+    {
+        if (n9)
+        {
+            destroy_tree(&n9);
+        }
+        if (n9l)
+        {
+            destroy_tree(&n9l);
+        }
+        if (n9r)
+        {
+            destroy_tree(&n9r);
+        }
+        printf("[LOG] mod nodes not created\n");
+        return false;
+    }
+    n9->isRoot = true;
+    n9->left_child = n9l;
+    n9->right_child = n9r;
+    n9->sSheet = false;
+    n9l->parent = n9;
+    n9r->parent = n9;
+    if (!eval(n9, NULL, &result) || result != 3)
+    {
+        printf("[LOG] mod eval failed\n");
+        destroy_tree(&n9);
+        return false;
+    }
+    destroy_tree(&n9);
+
+    Node *n10 = createNode("%%");
+    Node *n10l = createNode("7");
+    Node *n10r = createNode("0");
+    if (!n10 || !n10l || !n10r)
+    {
+        if (n10)
+        {
+            destroy_tree(&n10);
+        }
+        if (n10l)
+        {
+            destroy_tree(&n10l);
+        }
+        if (n10r)
+        {
+            destroy_tree(&n10r);
+        }
+        printf("[LOG] mod zero nodes not created\n");
+        return false;
+    }
+    n10->isRoot = true;
+    n10->left_child = n10l;
+    n10->right_child = n10r;
+    n10->sSheet = false;
+    n10l->parent = n10;
+    n10r->parent = n10;
+    if (!eval(n10, NULL, &result) || result != 0)
+    {
+        printf("[LOG] mod by zero branch failed\n");
+        destroy_tree(&n10);
+        return false;
+    }
+    destroy_tree(&n10);
+
+    Node *n11 = load_prf_expr("^ 2 10");
+    if (!n11 || !eval(n11, NULL, &result) || result != 1024)
+    {
+        printf("[LOG] pow eval failed\n");
+        if (n11)
+        {
+            destroy_tree(&n11);
+        }
+        return false;
+    }
+    destroy_tree(&n11);
+
+    Node *n12 = load_prf_expr("^ 5 0");
+    if (!n12 || !eval(n12, NULL, &result) || result != 1)
+    {
+        printf("[LOG] pow zero exp failed\n");
+        if (n12)
+        {
+            destroy_tree(&n12);
+        }
+        return false;
+    }
+    destroy_tree(&n12);
+
+    Node *n13 = load_prf_expr("^ 2 63");
+    if (!n13 || eval(n13, NULL, &result))
+    {
+        printf("[LOG] pow overflow must fail\n");
+        if (n13)
+        {
+            destroy_tree(&n13);
+        }
+        return false;
+    }
+    destroy_tree(&n13);
+
+    Node *n14 = load_prf_expr("@ 18 24");
+    if (!n14 || !eval(n14, NULL, &result) || result != 6)
+    {
+        printf("[LOG] gcd eval failed\n");
+        if (n14)
+        {
+            destroy_tree(&n14);
+        }
+        return false;
+    }
+    destroy_tree(&n14);
+
+    Node *n15 = load_prf_expr("@ 0 0");
+    if (!n15 || !eval(n15, NULL, &result) || result != 0)
+    {
+        printf("[LOG] gcd zero-zero failed\n");
+        if (n15)
+        {
+            destroy_tree(&n15);
+        }
+        return false;
+    }
+    destroy_tree(&n15);
+
+    Node *n16 = load_prf_expr("# 6 15");
+    if (!n16 || !eval(n16, NULL, &result) || result != 30)
+    {
+        printf("[LOG] lcm eval failed\n");
+        if (n16)
+        {
+            destroy_tree(&n16);
+        }
+        return false;
+    }
+    destroy_tree(&n16);
+
+    Node *n17 = load_prf_expr("# 0 15");
+    if (!n17 || !eval(n17, NULL, &result) || result != 0)
+    {
+        printf("[LOG] lcm zero branch failed\n");
+        if (n17)
+        {
+            destroy_tree(&n17);
+        }
+        return false;
+    }
+    destroy_tree(&n17);
+
+    Node *n18 = load_prf_expr("# 2147483647 2147483646");
+    if (!n18 || eval(n18, NULL, &result))
+    {
+        printf("[LOG] lcm overflow must fail\n");
+        if (n18)
+        {
+            destroy_tree(&n18);
+        }
+        return false;
+    }
+    destroy_tree(&n18);
+
+    Node *n19 = createNode("!");
+    Node *n19l = createNode("5");
+    if (!n19 || !n19l)
+    {
+        if (n19)
+        {
+            destroy_tree(&n19);
+        }
+        if (n19l)
+        {
+            destroy_tree(&n19l);
+        }
+        printf("[LOG] factorial nodes not created\n");
+        return false;
+    }
+    n19->isRoot = true;
+    n19->left_child = n19l;
+    n19->sSheet = false;
+    n19l->parent = n19;
+    if (!eval(n19, NULL, &result) || result != 120)
+    {
+        printf("[LOG] factorial eval failed\n");
+        destroy_tree(&n19);
+        return false;
+    }
+    destroy_tree(&n19);
+
+    Node *n20 = createNode("!");
+    Node *n20l = createNode("0");
+    if (!n20 || !n20l)
+    {
+        if (n20)
+        {
+            destroy_tree(&n20);
+        }
+        if (n20l)
+        {
+            destroy_tree(&n20l);
+        }
+        printf("[LOG] factorial zero nodes not created\n");
+        return false;
+    }
+    n20->isRoot = true;
+    n20->left_child = n20l;
+    n20->sSheet = false;
+    n20l->parent = n20;
+    if (!eval(n20, NULL, &result) || result != 1)
+    {
+        printf("[LOG] factorial zero failed\n");
+        destroy_tree(&n20);
+        return false;
+    }
+    destroy_tree(&n20);
+
+    Node *n21 = createNode("!");
+    Node *n21l = createNode("21");
+    if (!n21 || !n21l)
+    {
+        if (n21)
+        {
+            destroy_tree(&n21);
+        }
+        if (n21l)
+        {
+            destroy_tree(&n21l);
+        }
+        printf("[LOG] factorial overflow nodes not created\n");
+        return false;
+    }
+    n21->isRoot = true;
+    n21->left_child = n21l;
+    n21->sSheet = false;
+    n21l->parent = n21;
+    if (eval(n21, NULL, &result))
+    {
+        printf("[LOG] factorial overflow guard must fail\n");
+        destroy_tree(&n21);
+        return false;
+    }
+    destroy_tree(&n21);
+
+    Node *right_fact = createNode("!");
+    Node *arg = createNode("4");
+    if (!right_fact || !arg)
+    {
+        if (right_fact)
+        {
+            destroy_tree(&right_fact);
+        }
+        if (arg)
+        {
+            destroy_tree(&arg);
+        }
+        printf("[LOG] no create unary right branch nodes\n");
+        return false;
+    }
+    right_fact->isRoot = true;
+    right_fact->right_child = arg;
+    arg->parent = right_fact;
+    right_fact->sSheet = false;
+    if (!eval(right_fact, NULL, &result) || result != 24)
+    {
+        printf("[LOG] unary right child branch failed\n");
+        destroy_tree(&right_fact);
+        return false;
+    }
+    destroy_tree(&right_fact);
+
+    Node *bad_literal = createNode("12x");
+    if (!bad_literal || eval(bad_literal, NULL, &result))
+    {
+        printf("[LOG] invalid literal must fail\n");
+        if (bad_literal)
+        {
+            destroy_tree(&bad_literal);
+        }
+        return false;
+    }
+    destroy_tree(&bad_literal);
+
+    destroy_tree(&bad_literal);
+    if (bad_literal != NULL)
+    {
+        printf("[LOG] destroy_tree must set NULL\n");
+        return false;
+    }
+
+    return true;
+}
+
 int main()
 {
 
@@ -1048,6 +1464,15 @@ int main()
     else
     {
         printf("[+] parse_espr\n");
+    }
+    if (!test_eval())
+    {
+        printf("[-] test_eval\n");
+        exit(1);
+    }
+    else
+    {
+        printf("[+] test_eval\n");
     }
     printf("COMPLITE\n");
     exit(0);
