@@ -1,4 +1,5 @@
 #include "deter.h"
+#include <errno.h>
 
 bool push(stack **pointers, Node *ptr)
 {
@@ -223,7 +224,6 @@ Node *add_Node(Node **root, Node **now, Node *new)
         {
             // отец + лево
             (*now)->isRoot = false;
-            (*now)->sSheet = false;
             (*now)->parent = new;
             new->left_child = *now;
             *root = new;
@@ -253,6 +253,9 @@ Node *parse_expr(char *line)
     Node *root = NULL;
     stack *pointers = NULL;
     Node *now = NULL;
+    int count_list = 0;
+    int count_op = 0;
+
     while (*line != '\0' && *line != '\n')
     {
         while (isspace(*line))
@@ -277,18 +280,17 @@ Node *parse_expr(char *line)
                 destroy_tree(&root);
                 destroy_stack(&pointers);
                 return NULL;
-                exit(1);
             }
             // совмещаем два поддерева
             now = pop(&pointers);
             if (!now)
             {
                 pop(&pointers); // убираем бессмысленный root=NULL
-                while(isspace(*line))
+                while (isspace(*line))
                 {
                     line++;
                 }
-                if(*line == '\0')
+                if (*line == '\0')
                 {
                     now = root;
                     break;
@@ -296,38 +298,53 @@ Node *parse_expr(char *line)
                 int l = len_value(line);
                 char extra_value[11];
                 memcpy(extra_value, line, l);
-                if(index_of_operator(extra_value) == -1)
+                if (index_of_operator(extra_value) == -1)
                 {
                     destroy_tree(&root);
                     destroy_stack(&pointers);
                     return NULL;
                 }
+
                 Node *extra_Node = createNode(extra_value);
-                if(!extra_Node)
+                if (!extra_Node)
                 {
                     destroy_tree(&root);
                     destroy_stack(&pointers);
                     return NULL;
-                } 
+                }
 
                 extra_Node->isRoot = true;
                 extra_Node->sSheet = false;
                 extra_Node->left_child = root;
+                root->parent = extra_Node;
                 root->isRoot = false;
                 root = extra_Node;
                 now = root;
-                line+= l;
-                continue;
 
+                count_list += index_of_operator(now->value) == -1 ? 1 : 0;
+                count_op += index_of_operator(now->value) != -1 ? 1 : 0;
+                if (!strncmp("!", now->value, 1))
+                {
+                    count_list += 1;
+                }
+
+                line += l;
+                continue;
             }
             else
             {
+                // in now old tree, root is subtree
                 now->right_child = root;
+                if (root)
+                {
+                    root->parent = now;
+                }
                 root->isRoot = false;
+                now->sSheet = false;
                 root = pop(&pointers);
             }
-            
         }
+
         while (isspace(*line))
         {
             line++;
@@ -340,9 +357,10 @@ Node *parse_expr(char *line)
             return NULL;
         }
         char value[11];
-        memcpy(value, line, len);
-        value[len] = '\0';
 
+        memcpy(value, line, len);
+
+        value[len] = '\0';
         Node *new_node = createNode(value);
         if (!new_node)
         {
@@ -351,7 +369,19 @@ Node *parse_expr(char *line)
             return NULL;
         }
         add_Node(&root, &now, new_node);
+        count_list += index_of_operator(new_node->value) == -1 ? 1 : 0;
+        count_op += index_of_operator(new_node->value) != -1 ? 1 : 0;
+        if (!strncmp("!", new_node->value, 1))
+        {
+            count_list += 1;
+        }
         line += len;
+    }
+    destroy_stack(&pointers);
+    if (pointers || (count_list != count_op + 1))
+    {
+        destroy_tree(&root);
+        return NULL;
     }
     return root;
 }
@@ -442,10 +472,10 @@ Node *load_pst_expr(char *source)
     Node *now = NULL;
     int count_list = 0;
     int count_op = 0;
-    
-    char *line = (char*)malloc(strlen(source)+1);
+
+    char *line = (char *)malloc(strlen(source) + 1);
     char *start = line;
-    memcpy(line, source, strlen(source)+1);
+    memcpy(line, source, strlen(source) + 1);
     reverse_sequence(line);
     while (*line != '\0')
     {
@@ -550,7 +580,6 @@ massiveToken save_prf(Node *root)
         }
         else
         {
-            // printf("%s ", now->value);
             if (result.len + 1 == result.capacity)
             {
                 result.capacity *= 2;
@@ -615,10 +644,283 @@ massiveToken save_pst(Node *root)
     return result;
 }
 
-void eval(Node *tree, int args);
+static unsigned long long eval_uabs(long long x)
+{
+    if (x >= 0)
+    {
+        return (unsigned long long)x;
+    }
+    if (x == LLONG_MIN)
+    {
+        return 1ULL << 63;
+    }
+    return (unsigned long long)(-x);
+}
+
+static unsigned long long eval_ugcd(unsigned long long a, unsigned long long b)
+{
+    while (b != 0)
+    {
+        unsigned long long t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+static bool eval_parse_literal(const char *s, long long *out)
+{
+    errno = 0;
+    char *end = NULL;
+    long long v = strtoll(s, &end, 10);
+    if (errno == ERANGE || end == s || *end != '\0')
+    {
+        return false;
+    }
+    *out = v;
+    return true;
+}
+
+static bool eval_pow(long long base, long long exp, long long *out)
+{
+    if (exp < 0)
+    {
+        return false;
+    }
+    if (exp == 0)
+    {
+        *out = 1;
+        return true;
+    }
+    long long acc = 1;
+    long long b = base;
+    unsigned long long e = (unsigned long long)exp;
+    while (e > 1)
+    {
+        if (e & 1ULL)
+        {
+            if (__builtin_mul_overflow(acc, b, &acc))
+            {
+                return false;
+            }
+        }
+        e >>= 1;
+        if (e && __builtin_mul_overflow(b, b, &b))
+        {
+            return false;
+        }
+    }
+    return !__builtin_mul_overflow(acc, b, &acc) && (*out = acc, true);
+}
+
+static bool eval_factorial(long long n, long long *out)
+{
+    if (n < 0)
+    {
+        return false;
+    }
+    if (n <= 1)
+    {
+        *out = 1;
+        return true;
+    }
+    /* 21! > LLONG_MAX; без ограничения цикл ушёл бы в миллиарды итераций */
+    if (n > 20)
+    {
+        return false;
+    }
+    long long r = 1;
+    for (long long i = 2; i <= n; i++)
+    {
+        if (__builtin_mul_overflow(r, i, &r))
+        {
+            return false;
+        }
+    }
+    *out = r;
+    return true;
+}
+
+static bool eval_gcd(long long a, long long b, long long *out)
+{
+    unsigned long long ua = eval_uabs(a);
+    unsigned long long ub = eval_uabs(b);
+    if (ua == 0 && ub == 0)
+    {
+        *out = 0;
+        return true;
+    }
+    unsigned long long g = eval_ugcd(ua, ub);
+    if (g > (unsigned long long)LLONG_MAX)
+    {
+        return false;
+    }
+    *out = (long long)g;
+    return true;
+}
+
+static bool eval_lcm(long long a, long long b, long long *out)
+{
+    unsigned long long ua = eval_uabs(a);
+    unsigned long long ub = eval_uabs(b);
+    if (ua == 0 || ub == 0)
+    {
+        *out = 0;
+        return true;
+    }
+    unsigned long long g = eval_ugcd(ua, ub);
+    unsigned long long q = ua / g;
+    unsigned long long prod;
+    if (__builtin_mul_overflow(q, ub, &prod) || prod > (unsigned long long)LLONG_MAX)
+    {
+        return false;
+    }
+    *out = (long long)prod;
+    return true;
+}
+
+static bool eval_recursive(Node *node, VARS *vars, long long *out);
+
+static bool eval_unary_child(Node *node, VARS *vars, long long *out)
+{
+    Node *arg = node->left_child ? node->left_child : node->right_child;
+    return arg && eval_recursive(arg, vars, out);
+}
+
+static bool eval_recursive(Node *node, VARS *vars, long long *out)
+{
+    if (!node)
+    {
+        return false;
+    }
+    char op_idx = index_of_operator(node->value);
+    if (op_idx == (char)-1)
+    {
+        if (isdigit((unsigned char)node->value[0]) ||
+            (node->value[0] == '-' && isdigit((unsigned char)node->value[1])))
+        {
+            return eval_parse_literal(node->value, out);
+        }
+        for (VARS *v = vars; v; v = v->next)
+        {
+            if (strcmp(v->name, node->value) == 0)
+            {
+                *out = v->value;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    long long l = 0;
+    long long r = 0;
+    switch (op_idx)
+    {
+    case 0: // +
+        if (!eval_recursive(node->left_child, vars, &l) ||
+            !eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        return !__builtin_add_overflow(l, r, out);
+    case 1: // -
+        if (!eval_recursive(node->left_child, vars, &l) ||
+            !eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        return !__builtin_sub_overflow(l, r, out);
+    case 2: // *
+        if (!eval_recursive(node->left_child, vars, &l) ||
+            !eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        return !__builtin_mul_overflow(l, r, out);
+    case 3: // /
+        if (!eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        if (r == 0)
+        {
+            *out = 0;
+            return true;
+        }
+        if (!eval_recursive(node->left_child, vars, &l))
+        {
+            return false;
+        }
+        if (r == -1 && l == LLONG_MIN)
+        {
+            return false;
+        }
+        *out = l / r;
+        return true;
+    case 4: // %
+        if (!eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        if (r == 0)
+        {
+            *out = 0;
+            return true;
+        }
+        if (!eval_recursive(node->left_child, vars, &l))
+        {
+            return false;
+        }
+        if (r == -1 && l == LLONG_MIN)
+        {
+            return false;
+        }
+        *out = l % r;
+        return true;
+    case 5: // ^
+        if (!eval_recursive(node->left_child, vars, &l) ||
+            !eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        return eval_pow(l, r, out);
+    case 6: // @ gcd
+        if (!eval_recursive(node->left_child, vars, &l) ||
+            !eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        return eval_gcd(l, r, out);
+    case 7: // # lcm
+        if (!eval_recursive(node->left_child, vars, &l) ||
+            !eval_recursive(node->right_child, vars, &r))
+        {
+            return false;
+        }
+        return eval_lcm(l, r, out);
+    case 8: // !
+        if (!eval_unary_child(node, vars, &l))
+        {
+            return false;
+        }
+        return eval_factorial(l, out);
+    default:
+        return false;
+    }
+}
+
+bool eval(Node *node, VARS *vars, long long *result)
+{
+    if (!result)
+    {
+        return false;
+    }
+    return eval_recursive(node, vars, result);
+}
 
 void destroy_tree(Node **root)
 {
+
     Node *now = *root;
     while (now != NULL)
     {
@@ -649,13 +951,7 @@ void destroy_tree(Node **root)
             {
                 now = now->right_child;
             }
-            else
-            {
-                printf("[ERROR] no list, but haven't child\n");
-                free(now);
-                return;
-            }
         }
     }
-    // *root = NULL;
+    *root = NULL;
 }

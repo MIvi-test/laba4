@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <ctype.h>
+#include <math.h>
 // #include "auxiliary.c"
 
 enum typeToken
@@ -38,6 +39,13 @@ typedef struct pointer_stack
     Node *ptr;
     struct pointer_stack *before; 
 } stack;
+
+typedef struct VARS
+{
+    struct VARS *next;
+    long long value;
+    char name[11];
+} VARS;
 
 typedef struct
 {

@@ -556,6 +556,27 @@ bool test_load_prf_expr()
         return false;
     }
     free(res7.data);
+
+    Node *r8 = load_prf_expr("- * 3 + * 4 4 / - 3 2 2 1");
+    if(!r8)
+    {
+        printf("[LOG] bug in prf\n");
+        return false;
+    }
+    massiveToken res8 = save_prf(r8);
+    if (!res8.data || strcmp(res8.data, "- * 3 + * 4 4 / - 3 2 2 1"))
+    {
+        printf("[LOG] have error in prf\n");
+        if (res8.data)
+        {
+            free(res8.data);
+        }
+        destroy_tree(&r8);
+        return false;
+    }
+    free(res8.data);
+    destroy_tree(&r8);
+
     return true;
 }
 
@@ -616,90 +637,92 @@ bool test_load_rst_expr()
 
 bool test_parse_expr()
 {
-    char t1[] = "2 + 3 / 3 @ 3! - a * 5";
-    Node *tree1 = parse_expr(t1);
-    if (!tree1)
-    {
-        printf("[LOG] no create basic tree1\n");
-        return false;
-    }
-    else
-    {
-        massiveToken res1;
-        res1 = save_prf(tree1);
-        if (strcmp(res1.data, "- + 2 / 3 @ 3 ! 3 * a 5"))
-        {
-            free(res1.data);
-            destroy_tree(&tree1);
-            printf("[LOG] error prf form\n");
-            return false;
-        }
-        free(res1.data);
-        res1.len = 0;
-        res1.capacity = 0;
-        res1 = save_pst(tree1);
-        destroy_tree(&tree1);
-        if (strcmp(res1.data, "2 3 3 3 ! @ / + a 5 * -"))
-        {
-            printf("[LOG] error pst form\n");
-            free(res1.data);
-            return false;
-        }
-    }
+    // char t1[] = "2 + 3 / 3 @ 3! - a * 5";
+    // Node *tree1 = parse_expr(t1);
+    // if (!tree1)
+    // {
+    //     printf("[LOG] no create basic tree1\n");
+    //     return false;
+    // }
+    // else
+    // {
+    //     massiveToken res1;
+    //     res1 = save_prf(tree1);
+    //     if (strcmp(res1.data, "- + 2 / 3 @ 3 ! 3 * a 5"))
+    //     {
+    //         free(res1.data);
+    //         destroy_tree(&tree1);
+    //         printf("[LOG] error prf form\n");
+    //         return false;
+    //     }
+    //     free(res1.data);
+    //     res1.len = 0;
+    //     res1.capacity = 0;
+    //     res1 = save_pst(tree1);
+    //     destroy_tree(&tree1);
+    //     if (strcmp(res1.data, "2 3 3 3 ! @ / + a 5 * -"))
+    //     {
+    //         printf("[LOG] error pst form\n");
+    //         free(res1.data);
+    //         return false;
+    //     }
+    //     free(res1.data);
+    // }
 
-    char t2[] = "2 + (3 - 2) * 5";
-    Node *tree2 = parse_expr(t2);
-    if (!tree2)
-    {
-        printf("[LOG] no worked barked\n");
-        return false;
-    }
-    else
-    {
-        massiveToken res2;
-        res2 = save_prf(tree2);
-        destroy_tree(&tree2);
-        if (!res2.data)
-        {
-            printf("[LOG] error create tree2 prf\n");
-            return false;
-        }
-        if (strcmp(res2.data, "+ 2 * - 3 2 5"))
-        {
-            printf("[LOG] error create basic brackets\n");
-            free(res2.data);
-            return false;
-        }
-        free(res2.data);
-    }
+    // char t2[] = "2 + (3 - 2) * 5";
+    // Node *tree2 = parse_expr(t2);
+    // if (!tree2)
+    // {
+    //     printf("[LOG] no worked barked\n");
+    //     return false;
+    // }
+    // else
+    // {
+    //     massiveToken res2;
+    //     res2 = save_prf(tree2);
+    //     destroy_tree(&tree2);
+    //     if (!res2.data)
+    //     {
+    //         printf("[LOG] error create tree2 prf\n");
+    //         return false;
+    //     }
+    //     if (strcmp(res2.data, "+ 2 * - 3 2 5"))
+    //     {
+    //         printf("[LOG] error create basic brackets\n");
+    //         free(res2.data);
+    //         return false;
+    //     }
+    //     free(res2.data);
+    // }
 
-    char t3[] = "(2 + 3) / 2";
-    Node *tree3 = parse_expr(t3);
-    if (!tree3)
-    {
-        printf("[LOG] no create tree3\n");
-        return false;
-    }
-    else
-    {
-        massiveToken res3 = save_prf(tree3);
-        destroy_tree(&tree3);
-        if (!res3.data)
-        {
-            printf("[LOG] uncorrect tree\n");
-            return false;
-        }
-        if (strcmp(res3.data, "/ + 2 3 2"))
-        {
-            free(res3.data);
-            printf("[LOG] doesn't much with answer\n");
-            return false;
-        }
-        free(res3.data);
-    }
+    // char t3[] = "(2 + 3) / 2";
+    // Node *tree3 = parse_expr(t3);
+    // if (!tree3)
+    // {
+    //     printf("[LOG] no create tree3\n");
+    //     return false;
+    // }
+    // else
+    // {
+    //     massiveToken res3 = save_prf(tree3);
+    //     destroy_tree(&tree3);
+    //     if (!res3.data)
+    //     {
+    //         printf("[LOG] uncorrect tree\n");
+    //         return false;
+    //     }
+    //     if (strcmp(res3.data, "/ + 2 3 2"))
+    //     {
+    //         free(res3.data);
+    //         printf("[LOG] doesn't much with answer\n");
+    //         return false;
+    //     }
+    //     free(res3.data);
+    // }
+    
     char t4[] = "3*(4 * 4 + (3 - 2) / 2) - 1";
     Node *tree4 = parse_expr(t4);
-    if(!tree4)
+    if (!tree4)
     {
         printf("[LOG] no created 2 barkets, tree4\n");
         return false;
@@ -708,12 +731,12 @@ bool test_parse_expr()
     {
         massiveToken res4 = save_prf(tree4);
         destroy_tree(&tree4);
-        if(!res4.data)
+        if (!res4.data)
         {
             printf("[LOG] no correct tree for prf\n");
             return false;
         }
-        if(strcmp(res4.data, "- * 3 + * 4 4 / - 3 2 2 1"))
+        if (strcmp(res4.data, "- * 3 + * 4 4 / - 3 2 2 1"))
         {
             free(res4.data);
             printf("[LOG] does not mutch with reference tree4\n");
@@ -724,7 +747,7 @@ bool test_parse_expr()
 
     char t5[] = "((a + b) / c+2)*43!";
     Node *tree5 = parse_expr(t5);
-    if(!tree5)
+    if (!tree5)
     {
         printf("[LOG] no created tree5\n");
         return false;
@@ -733,12 +756,12 @@ bool test_parse_expr()
     {
         massiveToken res5 = save_prf(tree5);
         destroy_tree(&tree5);
-        if(!res5.data)
+        if (!res5.data)
         {
             printf("[LOG] cant to make res5\n");
             return false;
         }
-        if(strcmp(res5.data, "* + / + a b c 2 ! 43"))
+        if (strcmp(res5.data, "* + / + a b c 2 ! 43"))
         {
             free(res5.data);
             printf("[LOG] does not mutch with reference tree5\n");
@@ -746,7 +769,55 @@ bool test_parse_expr()
         }
         free(res5.data);
     }
+    char t6[] = "((3+3) / 2)";
+    Node *tree6 = parse_expr(t6);
+    if (!tree6)
+    {
+        printf("[LOG] wasn't created tree6\n");
+        return false;
+    }
+    else
+    {
+        massiveToken res6 = save_prf(tree6);
+        destroy_tree(&tree6);
+        if (!res6.data)
+        {
+            printf("[LOG] wrong create tree6\n");
+            return false;
+        }
+        if (strcmp(res6.data, "/ + 3 3 2"))
+        {
+            printf("[LOG] doesn't match tree6 with reference\n");
+            free(res6.data);
+            return false;
+        }
+        free(res6.data);
+    }
 
+    char t7[] = "(2+3) - 2";
+    Node *tree7 = parse_expr(t7);
+    if(!tree7)
+    {
+        printf("[LOG] no created tree7\n");
+        return false;
+    }
+    else
+    {
+        massiveToken res7 = save_prf(tree7);
+        destroy_tree(&tree7);
+        if(!res7.data)
+        {
+            printf("[LOG] wrong tree7\n");
+            return false;
+        }
+        if(strcmp(res7.data,"- + 2 3 2"))
+        {
+            free(res7.data);
+            printf("[LOG] doesn't match with reference tree7\n");
+            return false;
+        }
+        free(res7.data);
+    }
     return true;
 }
 

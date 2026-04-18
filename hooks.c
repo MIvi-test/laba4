@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 
+
 static void *(*real_malloc)(size_t) = NULL;
 static void *(*real_calloc)(size_t, size_t) = NULL;
 static void *(*real_realloc)(void *, size_t) = NULL;
@@ -61,6 +62,6 @@ __attribute__((destructor)) void writefile(void) {
         return;
     }
     fprintf(f, "malloc: %zu\nrealloc: %zu\ncalloc: %zu\nfree: %zu\n", 
-            USE_MALLOC-2, USE_REALLOC, USE_CALLOC, USE_FREE);
+            USE_MALLOC, USE_REALLOC, USE_CALLOC, USE_FREE);
     fclose(f);
 }

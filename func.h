@@ -21,6 +21,8 @@ Node *peak(stack **pointers);
 
 void destroy_stack(stack **pointers);
 
+Node *add_node(Node **root, Node **now, Node *new);
+
 unsigned char len_value(char *start);
 
 Node *parse_expr(char *line);
@@ -33,11 +35,10 @@ massiveToken save_prf(Node *root);
 
 massiveToken save_pst(Node *root);
 
-void eval(Node *root, int args);
+bool eval(Node *node, VARS *vars, long long *result);
 
 void destroy_tree(Node **root);
 
-Node *add_node(Node **root, Node **now, Node *new);
 
 #include "func.c"
 

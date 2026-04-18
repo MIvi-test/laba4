@@ -7,7 +7,7 @@ UNIT_TARGET = unit_test
 TARGET = main
 SO_LIB = ld_preload.so
 
-VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
+# VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
 
 
 all: run_hook
@@ -29,12 +29,9 @@ $(TARGET).out: $(TARGET).c
 
 
 run_hook: $(UNIT_TARGET).out
-	@echo "--- Running Tests ---"
 	./$(UNIT_TARGET).out
-	@echo "--- Tests Passed. Building Hooks and Main ---"
 	$(MAKE) $(SO_LIB)
 	$(MAKE) $(TARGET).out
-	@echo "--- Running Main with LD_PRELOAD ---"
 	LD_PRELOAD=./$(SO_LIB) ./$(TARGET).out
 
 clean:
