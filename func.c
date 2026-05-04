@@ -33,6 +33,14 @@ Node *pop(stack **pointers)
 
 Node *peak(stack **pointers)
 {
+    if (!pointers)
+    {
+        return NULL;
+    }
+    if (!(*pointers))
+    {
+        return NULL;
+    }
     return (*pointers)->ptr;
 }
 
@@ -275,7 +283,7 @@ Node *parse_expr(char *line)
         if (*line == ')')
         {
             line++;
-            if (!pointers)
+            if (!pointers || root == NULL)
             {
                 destroy_tree(&root);
                 destroy_stack(&pointers);
@@ -285,10 +293,15 @@ Node *parse_expr(char *line)
             now = pop(&pointers);
             if (!now)
             {
+
                 pop(&pointers); // убираем бессмысленный root=NULL
                 while (isspace(*line))
                 {
                     line++;
+                }
+                if (*line == ')')
+                {
+                    continue;
                 }
                 if (*line == '\0')
                 {
@@ -342,6 +355,7 @@ Node *parse_expr(char *line)
                 root->isRoot = false;
                 now->sSheet = false;
                 root = pop(&pointers);
+                continue;
             }
         }
 
@@ -377,8 +391,9 @@ Node *parse_expr(char *line)
         }
         line += len;
     }
+    bool has_unclosed_parentheses = (pointers != NULL);
     destroy_stack(&pointers);
-    if (pointers || (count_list != count_op + 1))
+    if (has_unclosed_parentheses || (count_list != count_op + 1))
     {
         destroy_tree(&root);
         return NULL;

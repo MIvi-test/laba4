@@ -8,21 +8,6 @@
 #include <limits.h>
 #include <ctype.h>
 #include <math.h>
-// #include "auxiliary.c"
-
-enum typeToken
-{
-    VALUE = 0,
-    PLUS,
-    MUNIS,
-    MULTUPHLY,
-    DIVISION,
-    MODUL,
-    POWER,
-    NOK,
-    NOD,
-    FACTORIAL
-};
 
 typedef struct Node
 {
